@@ -1,0 +1,41 @@
+name: Prisma DB Push
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    # אם הקוד שלך בתוך תיקייה פנימית (למשל "social-twin"),
+    # שנה את working-directory לשם: "./social-twin"
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Show files (debug)
+        run: ls -la
+
+      - name: Make sure package.json exists
+        run: test -f package.json || (echo "package.json missing at repo root" && exit 1)
+
+      - name: Install deps (no lockfile)
+        run: npm install --no-audit --no-fund
+
+      - name: Generate Prisma
+        run: npx prisma generate
+
+      - name: DB Push
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma db push --accept-data-loss
